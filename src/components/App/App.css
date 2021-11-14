@@ -3,6 +3,12 @@ body {
   justify-content: center;
 }
 
+.marker-delivery {
+  background-color: red;
+  width: 25px;
+  height: 25px;
+}
+
 .app {
   height: 600px;
   width: 100vh;

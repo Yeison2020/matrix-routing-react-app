@@ -12,16 +12,27 @@ const App = () => {
   const [latitude, setLatitude] = useState(51.504);
   const mapElement = useRef();
   const [map, setMap] = useState({});
-  const convertToPoint = (longLat)=>{
+  const convertToPoint = (longLat) => {
     return {
-      point:{
-        latitude: longLat.lat, longitude: longLat.lng}}}
-        
+      point: {
+        latitude: longLat.lat,
+        longitude: longLat.lng,
+      },
+    };
+  };
+
+  const addDeliveryMarkUp = (lngLat, map) => {
+    const element = document.createElement("div");
+    element.className = "marker-delivery";
+    new tt.Marker({ element: element }).setLngLat(lngLat).addTo(map);
+  };
+
   useEffect(() => {
+    const destinations = [];
     const origin = {
       lng: longitude,
-      lat:latitude
-    }
+      lat: latitude,
+    };
     let map = tt.map({
       key: process.env.React_App_Tom_Tom_Api_Key,
       container: mapElement.current,
@@ -54,16 +65,33 @@ const App = () => {
     };
 
     addMarker();
-    const callParameter = {
-      key: process.env.React_App_Tom_Tom_Api_Key,
-      destination: {
-
-      },
-      origin: 
+    const sortDestinations = (locations) => {
+      const pointForDestinations = locations.map((destination) => {
+        return convertToPoint(destination);
+      });
+      const callParameter = {
+        key: process.env.React_App_Tom_Tom_Api_Key,
+        destination: pointForDestinations,
+        origins: [convertToPoint(origin)],
+      };
+      return new Promise((resolve, reject) => {
+        ttApi.services.matrixRouting(callParameter);
+      }).then((matrixAPIResults) => {
+        const result = matrixAPIResults.matrix[0];
+        result.map((result, index) => {
+          return {
+            location: result[index],
+            drivingtime: result.response.routeSummary.travelTimeInSecounds,
+          };
+        });
+      });
     };
-    return new Promise((resolve, reject) => {
-      ttApi.services.matrixRouting(callParameter);
+
+    map.on("click", (e) => {
+      destinations.push(e.lngLat);
+      addDeliveryMarkUp(e.lngLat, map);
     });
+    console.log(destinations);
 
     return () => map.remove();
   }, [latitude, longitude]);
